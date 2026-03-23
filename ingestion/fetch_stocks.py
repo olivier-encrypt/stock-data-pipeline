@@ -60,33 +60,34 @@ def transform_stock_data(raw_data, ticker):
 def load_stock_data(cursor, records):
     print(f"loading {records[0]['ticker']} stock data into Azure SQL...")
 
-    load_count=0
-    for record in records:
-        sql="""
-            if not exists(
-            select 1 from raw_stocks
-            where ticker = ? and trade_date = ?
-            )
-            INSERT INTO raw_stocks
-            (ticker, trade_date, open_price, high_price, low_price, close_price, volume)
-            VALUES
-                (?, ?, ?, ?, ?, ?, ?)
-        """
-        cursor.execute(sql,
-                    record["ticker"],
-                    record["trade_date"],
-                    record["ticker"],
-                    record["trade_date"],
-                    record["open_price"],
-                    record["high_price"],
-                    record["low_price"],
-                    record["close_price"],
-                    record["volume"]
-
+   
+    sql="""
+        if not exists(
+        select 1 from raw_stocks
+        where ticker = ? and trade_date = ?
         )
-        load_count += 1
+        INSERT INTO raw_stocks
+        (ticker, trade_date, open_price, high_price, low_price, close_price, volume)
+        VALUES
+            (?, ?, ?, ?, ?, ?, ?)
+    """
+    values = [
+    (
+        record["ticker"],
+        record["trade_date"],
+        record["ticker"],
+        record["trade_date"],
+        record["open_price"],
+        record["high_price"],
+        record["low_price"],
+        record["close_price"],
+        record["volume"]
+    )
+        for record in records
+    ]
+    cursor.executemany(sql, values)
 
-    print(f"  Loaded data for {record['ticker']} on {record['trade_date']} succesfully.")
+    print(f" Loaded {len(records)} records for {records[0]['ticker']}")
 
 def run_stock_pipeline():
 

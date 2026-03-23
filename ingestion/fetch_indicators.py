@@ -17,7 +17,7 @@ from utils.db_connection import get_connection
 load_dotenv()
 api_key = os.getenv("ALPHA_VANTAGE_API_KEY")
 
-TICKERS = ["AAPL", "MSFT", "GOOGL", "TSLA", "AMZN"]
+TICKERS = ["AAPL", "MSFT", "GOOGL", "TSLA","AMZN"]
 
 SMA_PERIOD = 20
 EMA_PERIOD = 20
@@ -71,43 +71,54 @@ def transform_indicators(ticker, sma_data, ema_data, rsi_data):
 def load_indicators(cursor,records):
     print(f" INserting {records[0]['ticker']} indicators into Azure SQL...")
 
-    load_count = 0
-
-    for record in records:
-        sql = """
-            IF NOT EXISTS (
-                SELECT 1 FROM technical_indicators
-                WHERE ticker = ? AND trade_date = ?
-            )
-            INSERT INTO technical_indicators
-            (ticker, trade_date, sma_20, ema_20, rsi_14)
-            VALUES (?, ?, ?, ?, ?)
-        """
-        cursor.execute(sql, (
-            record["ticker"],       # WHERE ticker = ?
-            record["trade_date"],   # WHERE trade_date = ?
-            record["ticker"],
-            record["trade_date"],
-            record["sma_20"],
-            record["ema_20"],
-            record["rsi_14"]
-        ))
-        load_count += 1
-    print(f" Loaded {load_count} records for {records[0]['ticker']}")
+    sql = """
+        IF NOT EXISTS (
+            SELECT 1 FROM technical_indicators
+            WHERE ticker = ? AND trade_date = ?
+        )
+        INSERT INTO technical_indicators
+        (ticker, trade_date, sma_20, ema_20, rsi_14)
+        VALUES (?, ?, ?, ?, ?)
+    """
+    #list comprehension to create a list of tuples for executemany. 
+    # Each tuple corresponds to one record and contains the values in the order expected by the SQL query's placeholders.
+    values= [(
+        record["ticker"],       # WHERE ticker = ?
+        record["trade_date"],   # WHERE trade_date = ?
+        record["ticker"],
+        record["trade_date"],
+        record["sma_20"],
+        record["ema_20"],
+        record["rsi_14"]
+    ) for record in records]     
+    cursor.executemany(sql, values)
+    
+    print(f" Loaded {len(records)} records for {records[0]['ticker']}")
 
 def run_indicators_pipeline():
-    print("\nConnecting to Azure SQL...")
-    conn = get_connection()
-    cursor = conn.cursor()
-    print(" Connected!\n")
+
+    print("=" * 55)
+    print("TECHNICAL INDICATORS PIPELINE STARTING")
+    print("=" * 55)
 
     success_count = 0
-    failed_count = 0
+    failed_count  = 0
 
-    INDICATORS = ["SMA", "EMA", "RSI"]
     for i, ticker in enumerate(TICKERS):
         print(f"\n[{i+1}/{len(TICKERS)}] Processing {ticker}")
         print("-" * 40)
+
+        # Fresh connection per ticker
+        # Prevents timeout from killing the whole pipeline
+        # If one ticker's connection dies, others are unaffected
+        try:
+            conn   = get_connection()
+            cursor = conn.cursor()
+            print("   Connected!")
+        except Exception as e:
+            print(f"   Could not connect: {e}")
+            failed_count += 1
+            continue
 
         try:
             sma_data = extract_indicator(ticker, "SMA", SMA_PERIOD)
@@ -119,22 +130,45 @@ def run_indicators_pipeline():
             if sma_data and ema_data and rsi_data:
                 records = transform_indicators(ticker, sma_data, ema_data, rsi_data)
                 load_indicators(cursor, records)
+
+                # Fix 2 — Commit immediately after each ticker
+                # Data is saved right away — if next ticker fails
+                # this ticker's data is already safe in the database
+                conn.commit()
+                print(f"   {ticker} committed successfully")
                 success_count += 1
             else:
-                print(f" Skipping {ticker} due to missing data")
+                print(f"   Skipping {ticker} — missing indicator data")
                 failed_count += 1
 
         except Exception as e:
-            print(f" Error processing {ticker}: {e}")
+            print(f"   Error processing {ticker}: {e}")
             failed_count += 1
 
+        finally:
+            # "finally" always runs — success OR failure
+            # Guarantees connection is always closed cleanly
+            try:
+                cursor.close()
+                conn.close()
+                print(f"   Connection closed for {ticker}")
+            except:
+                pass
+
+        # Rate limit between tickers
         if ticker != TICKERS[-1]:
             print(f"\n Waiting 45 seconds before next ticker...")
             time.sleep(45)
 
-    print(f"\nPipeline completed!")
-    print(f"Success: {success_count}")
-    print(f"Failed: {failed_count}")
-    
+    # Summary
+    # print("\n" + "=" * 55)
+    # print("PIPELINE COMPLETE — SUMMARY")
+    # print("=" * 55)
+    print(f"   Successfully loaded : {success_count} tickers")
+    print(f"   Failed              : {failed_count} tickers")
+    print(f"   Total processed     : {len(TICKERS)} tickers")
+
+
+  
 if __name__ == "__main__":
     run_indicators_pipeline()
