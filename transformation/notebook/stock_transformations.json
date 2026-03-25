@@ -1,0 +1,120 @@
+{
+	"name": "stock_transformations",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "stocksparkpool",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "83e6fd00-cb16-4696-b0fa-d3aceb87d6d8"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/a8b3a337-96a4-4002-857b-c17626d02086/resourceGroups/stock-pipeline-rg/providers/Microsoft.Synapse/workspaces/stock-synapse-ws/bigDataPools/stocksparkpool",
+				"name": "stocksparkpool",
+				"type": "Spark",
+				"endpoint": "https://stock-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/stocksparkpool",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.5",
+				"nodeCount": 3,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"# ============================================\n",
+					"#  Test Connection to Azure SQL\n",
+					"# ============================================\n",
+					"\n",
+					"\n",
+					"# Azure SQL connection details\n",
+					"\n",
+					"server   = \"stocks-sql-server.database.windows.net\"\n",
+					"database = \"stocks-db\"\n",
+					"username = \"sqladmin\"\n",
+					"password = \"Azuresql@237\"  \n",
+					"\n",
+					"# Build the JDBC URL\n",
+					"# Format: jdbc:sqlserver://server:port;database=name\n",
+					"jdbc_url = f\"jdbc:sqlserver://{server}:1433;database={database}\"\n",
+					"\n",
+					"# Connection properties dictionary\n",
+					"# Tells Spark HOW to authenticate\n",
+					"connection_properties = {\n",
+					"    \"user\"    : username,\n",
+					"    \"password\": password,\n",
+					"    \"driver\"  : \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+					"}\n",
+					"\n",
+					"print(\" Connection details configured!\")\n",
+					"print(f\"   Server  : {server}\")\n",
+					"print(f\"   Database: {database}\")\n",
+					"print(f\"   JDBC URL: {jdbc_url}\")"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ============================================\n",
+					"# Read raw_stocks from Azure SQL\n",
+					"# into a PySpark DataFrame\n",
+					"# ============================================\n",
+					"\n",
+					"print(\"Reading raw_stock from Azure SQL....\")\n",
+					"\n",
+					"df_stocks = spark.read.jdbc(\n",
+					"    url = jdbc_url,\n",
+					"    table = \"raw_stocks\",\n",
+					"    properties = connection_properties\n",
+					")\n",
+					"\n",
+					"# .cache() tells Spark to keep this DataFrame in memory\n",
+					"# so we don't re-read from Azure SQL every time we use it\n",
+					"df_stocks.cache()\n",
+					"\n",
+					"#counting the number of rows read\n",
+					"row_count = df_stocks.count()\n",
+					"print(f\" Successfully read raw_stocks!\")\n",
+					"print(f\" Total rows: {row_count}\")\n",
+					"\n",
+					"# printSchema() shows the structure of the DataFrame\n",
+					"print(\"\\nSchema (columns and data types):\")\n",
+					"df_stocks.printSchema()\n",
+					""
+				],
+				"execution_count": 3
+			}
+		]
+	}
+}
