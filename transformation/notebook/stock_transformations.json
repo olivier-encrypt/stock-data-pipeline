@@ -18,15 +18,16 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "83e6fd00-cb16-4696-b0fa-d3aceb87d6d8"
+				"spark.autotune.trackingId": "073729f8-9cc4-4952-bca7-0e6e0912910f"
 			}
 		},
 		"metadata": {
 			"saveOutput": true,
-			"synapse_widget": {
-				"version": "0.1"
-			},
 			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
 			"language_info": {
 				"name": "python"
 			},
@@ -37,14 +38,13 @@
 				"endpoint": "https://stock-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/stocksparkpool",
 				"auth": {
 					"type": "AAD",
-					"authResource": "https://dev.azuresynapse.net",
-					"authHeader": null
+					"authResource": "https://dev.azuresynapse.net"
 				},
 				"sparkVersion": "3.5",
 				"nodeCount": 3,
 				"cores": 4,
 				"memory": 28,
-				"extraHeader": null
+				"automaticScaleJobs": false
 			},
 			"sessionKeepAliveTimeout": 30
 		},
@@ -81,7 +81,7 @@
 					"print(f\"   Database: {database}\")\n",
 					"print(f\"   JDBC URL: {jdbc_url}\")"
 				],
-				"execution_count": 1
+				"execution_count": 17
 			},
 			{
 				"cell_type": "code",
@@ -113,7 +113,149 @@
 					"df_stocks.printSchema()\n",
 					""
 				],
-				"execution_count": 3
+				"execution_count": 18
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"#  Read stock_metadata from Azure SQL\n",
+					"# This is our reference/dimension table\n",
+					"# Contains company info for each ticker\n",
+					"\n",
+					"\n",
+					"\n",
+					"print(\"Reading stock_metadata from Azure SQL...\")\n",
+					"\n",
+					"df_metadata = spark.read.jdbc(\n",
+					"    url        = jdbc_url,\n",
+					"    table      = \"stock_metadata\",\n",
+					"    properties = connection_properties\n",
+					")\n",
+					"\n",
+					"df_metadata.cache()\n",
+					"\n",
+					"row_count = df_metadata.count()\n",
+					"print(f\" Successfully read stock_metadata!\")\n",
+					"print(f\"  Total rows: {row_count}\")\n",
+					"\n",
+					"print(\"\\nSchema:\")\n",
+					"df_metadata.printSchema()\n",
+					"\n",
+					"print(\"\\nAll rows (only 5 tickers):\")\n",
+					"df_metadata.show(5)"
+				],
+				"execution_count": 19
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\n",
+					"# Read technical_indicators from Azure SQL\n",
+					"\n",
+					"\n",
+					"print(\"Reading technical_indicators from Azure SQL...\")\n",
+					"\n",
+					"df_indicators = spark.read.jdbc(\n",
+					"    url        = jdbc_url,\n",
+					"    table      = \"technical_indicators\",\n",
+					"    properties = connection_properties\n",
+					")\n",
+					"\n",
+					"df_indicators.cache()\n",
+					"\n",
+					"row_count = df_indicators.count()\n",
+					"print(f\" Successfully read technical_indicators!\")\n",
+					"print(f\" Total rows: {row_count}\")\n",
+					"\n",
+					"print(\"\\nSchema:\")\n",
+					"df_indicators.printSchema()\n",
+					"\n",
+					"# Show first 5 rows to preview the data\n",
+					"print(\"\\nFirst 5 rows:\")\n",
+					"df_indicators.show(5)"
+				],
+				"execution_count": 20
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# ============================================\n",
+					"#  Calculate True MACD\n",
+					"\n",
+					"# EMA Formula:\n",
+					"# EMA = prices.ewm(alpha=k, adjust=False).mean()\n",
+					"# ewm = Exponentially Weighted Mean\n",
+					"# alpha = smoothing factor k\n",
+					"# adjust=False = recursive formula (not weighted sum)\n",
+					"\n",
+					"# ============================================\n",
+					"\n",
+					"from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType\n",
+					"from pyspark.sql.functions import col\n",
+					"import pandas as pd\n",
+					"\n",
+					"# Smoothing factors\n",
+					"k_12 = 2.0 / (12 + 1)\n",
+					"k_26 = 2.0 / (26 + 1)\n",
+					"k_9  = 2.0 / (9  + 1)\n",
+					"\n",
+					"# Output schema\n",
+					"macd_schema = StructType([\n",
+					"    StructField(\"ticker\",      StringType(), True),\n",
+					"    StructField(\"trade_date\",  DateType(),   True),\n",
+					"    StructField(\"close_price\", DoubleType(), True),\n",
+					"    StructField(\"macd_line\",   DoubleType(), True),\n",
+					"    StructField(\"macd_signal\", DoubleType(), True),\n",
+					"    StructField(\"macd_hist\",   DoubleType(), True),\n",
+					"])\n",
+					"\n",
+					"def calculate_macd(ticker_df: pd.DataFrame) -> pd.DataFrame:\n",
+					"    # Sort oldest to newest — critical for EMA\n",
+					"    ticker_df = ticker_df.sort_values(\"trade_date\")\n",
+					"    \n",
+					"    # Calculate EMA 12 and EMA 26 using pandas\n",
+					"    ema_12 = ticker_df[\"close_price\"].ewm(alpha=k_12, adjust=False).mean()\n",
+					"    ema_26 = ticker_df[\"close_price\"].ewm(alpha=k_26, adjust=False).mean()\n",
+					"    \n",
+					"    # MACD line — use pandas .round() NOT pyspark round()\n",
+					"    ticker_df[\"macd_line\"]   = (ema_12 - ema_26).round(4)\n",
+					"    \n",
+					"    # Signal line\n",
+					"    ticker_df[\"macd_signal\"] = ticker_df[\"macd_line\"].ewm(alpha=k_9, adjust=False).mean().round(4)\n",
+					"    \n",
+					"    # Histogram\n",
+					"    ticker_df[\"macd_hist\"]   = (\n",
+					"        ticker_df[\"macd_line\"] - ticker_df[\"macd_signal\"]\n",
+					"    ).round(4)\n",
+					"    \n",
+					"    return ticker_df[[\n",
+					"        \"ticker\", \"trade_date\", \"close_price\",\n",
+					"        \"macd_line\", \"macd_signal\", \"macd_hist\"\n",
+					"    ]]\n",
+					"\n",
+					"# Extract close prices\n",
+					"df_prices = df_stocks.select(\n",
+					"    col(\"ticker\"),\n",
+					"    col(\"trade_date\"),\n",
+					"    col(\"close_price\").cast(\"double\")\n",
+					")\n",
+					"\n",
+					"# Apply to all tickers\n",
+					"df_macd_complete = df_prices\\\n",
+					"    .groupBy(\"ticker\")\\\n",
+					"    .applyInPandas(calculate_macd, schema=macd_schema)\n",
+					"\n",
+					"print(f\" MACD calculated!\")\n",
+					"print(f\" Total rows: {df_macd_complete.count()}\")\n",
+					"\n",
+					"print(\"\\nAAPL MACD — last 5 days:\")\n",
+					"df_macd_complete\\\n",
+					"    .filter(col(\"ticker\") == \"AAPL\")\\\n",
+					"    .orderBy(col(\"trade_date\").desc())\\\n",
+					"    .show(50)"
+				],
+				"execution_count": 25
 			}
 		]
 	}
