@@ -1,0 +1,441 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "stock-synapse-ws"
+		},
+		"AzureSqlDB_stocks_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDB_stocks'"
+		},
+		"stock-synapse-ws-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'stock-synapse-ws-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:stock-synapse-ws.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stocks-sql-server.database.windows.net"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stocks-db"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"stock-synapse-ws-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stockdatalake237.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/AzureSqlDB_stocks')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDB_stocks_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDB_stocks_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": true,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDB_stocks_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDB_stocks_password')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/stock-synapse-ws-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('stock-synapse-ws-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/stock-synapse-ws-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('stock-synapse-ws-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/stock_transformations')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "stocksparkpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"runAsWorkspaceSystemIdentity": false,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "f32311d8-8706-48b9-960a-b5122e9130c6"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/a8b3a337-96a4-4002-857b-c17626d02086/resourceGroups/stock-pipeline-rg/providers/Microsoft.Synapse/workspaces/stock-synapse-ws/bigDataPools/stocksparkpool",
+						"name": "stocksparkpool",
+						"type": "Spark",
+						"endpoint": "https://stock-synapse-ws.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/stocksparkpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.5",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28,
+						"automaticScaleJobs": false
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ============================================\n",
+							"#  Test Connection to Azure SQL\n",
+							"# ============================================\n",
+							"\n",
+							"\n",
+							"# Azure SQL connection details\n",
+							"\n",
+							"server   = \"stocks-sql-server.database.windows.net\"\n",
+							"database = \"stocks-db\"\n",
+							"username = \"sqladmin\"\n",
+							"password = \"Azuresql@237\"  \n",
+							"\n",
+							"# Build the JDBC URL\n",
+							"# Format: jdbc:sqlserver://server:port;database=name\n",
+							"jdbc_url = f\"jdbc:sqlserver://{server}:1433;database={database}\"\n",
+							"\n",
+							"# Connection properties dictionary\n",
+							"# Tells Spark HOW to authenticate\n",
+							"connection_properties = {\n",
+							"    \"user\"    : username,\n",
+							"    \"password\": password,\n",
+							"    \"driver\"  : \"com.microsoft.sqlserver.jdbc.SQLServerDriver\"\n",
+							"}\n",
+							"\n",
+							"print(\" Connection details configured!\")\n",
+							"print(f\"   Server  : {server}\")\n",
+							"print(f\"   Database: {database}\")\n",
+							"print(f\"   JDBC URL: {jdbc_url}\")"
+						],
+						"outputs": [],
+						"execution_count": 17
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ============================================\n",
+							"# Read raw_stocks from Azure SQL\n",
+							"# into a PySpark DataFrame\n",
+							"# ============================================\n",
+							"\n",
+							"print(\"Reading raw_stock from Azure SQL....\")\n",
+							"\n",
+							"df_stocks = spark.read.jdbc(\n",
+							"    url = jdbc_url,\n",
+							"    table = \"raw_stocks\",\n",
+							"    properties = connection_properties\n",
+							")\n",
+							"\n",
+							"# .cache() tells Spark to keep this DataFrame in memory\n",
+							"# so we don't re-read from Azure SQL every time we use it\n",
+							"df_stocks.cache()\n",
+							"\n",
+							"#counting the number of rows read\n",
+							"row_count = df_stocks.count()\n",
+							"print(f\" Successfully read raw_stocks!\")\n",
+							"print(f\" Total rows: {row_count}\")\n",
+							"\n",
+							"# printSchema() shows the structure of the DataFrame\n",
+							"print(\"\\nSchema (columns and data types):\")\n",
+							"df_stocks.printSchema()\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 18
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"\n",
+							"#  Read stock_metadata from Azure SQL\n",
+							"# This is our reference/dimension table\n",
+							"# Contains company info for each ticker\n",
+							"\n",
+							"\n",
+							"\n",
+							"print(\"Reading stock_metadata from Azure SQL...\")\n",
+							"\n",
+							"df_metadata = spark.read.jdbc(\n",
+							"    url        = jdbc_url,\n",
+							"    table      = \"stock_metadata\",\n",
+							"    properties = connection_properties\n",
+							")\n",
+							"\n",
+							"df_metadata.cache()\n",
+							"\n",
+							"row_count = df_metadata.count()\n",
+							"print(f\" Successfully read stock_metadata!\")\n",
+							"print(f\"  Total rows: {row_count}\")\n",
+							"\n",
+							"print(\"\\nSchema:\")\n",
+							"df_metadata.printSchema()\n",
+							"\n",
+							"print(\"\\nAll rows (only 5 tickers):\")\n",
+							"df_metadata.show(5)"
+						],
+						"outputs": [],
+						"execution_count": 19
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"\n",
+							"# Read technical_indicators from Azure SQL\n",
+							"\n",
+							"\n",
+							"print(\"Reading technical_indicators from Azure SQL...\")\n",
+							"\n",
+							"df_indicators = spark.read.jdbc(\n",
+							"    url        = jdbc_url,\n",
+							"    table      = \"technical_indicators\",\n",
+							"    properties = connection_properties\n",
+							")\n",
+							"\n",
+							"df_indicators.cache()\n",
+							"\n",
+							"row_count = df_indicators.count()\n",
+							"print(f\" Successfully read technical_indicators!\")\n",
+							"print(f\" Total rows: {row_count}\")\n",
+							"\n",
+							"print(\"\\nSchema:\")\n",
+							"df_indicators.printSchema()\n",
+							"\n",
+							"# Show first 5 rows to preview the data\n",
+							"print(\"\\nFirst 5 rows:\")\n",
+							"df_indicators.show(5)"
+						],
+						"outputs": [],
+						"execution_count": 20
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"# ============================================\n",
+							"#  Calculate True MACD\n",
+							"\n",
+							"# EMA Formula:\n",
+							"# EMA = prices.ewm(alpha=k, adjust=False).mean()\n",
+							"# ewm = Exponentially Weighted Mean\n",
+							"# alpha = smoothing factor k\n",
+							"# adjust=False = recursive formula (not weighted sum)\n",
+							"\n",
+							"# ============================================\n",
+							"\n",
+							"from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType\n",
+							"from pyspark.sql.functions import col\n",
+							"import pandas as pd\n",
+							"\n",
+							"# Smoothing factors\n",
+							"k_12 = 2.0 / (12 + 1)\n",
+							"k_26 = 2.0 / (26 + 1)\n",
+							"k_9  = 2.0 / (9  + 1)\n",
+							"\n",
+							"# Output schema\n",
+							"macd_schema = StructType([\n",
+							"    StructField(\"ticker\",      StringType(), True),\n",
+							"    StructField(\"trade_date\",  DateType(),   True),\n",
+							"    StructField(\"close_price\", DoubleType(), True),\n",
+							"    StructField(\"macd_line\",   DoubleType(), True),\n",
+							"    StructField(\"macd_signal\", DoubleType(), True),\n",
+							"    StructField(\"macd_hist\",   DoubleType(), True),\n",
+							"])\n",
+							"\n",
+							"def calculate_macd(ticker_df: pd.DataFrame) -> pd.DataFrame:\n",
+							"    # Sort oldest to newest — critical for EMA\n",
+							"    ticker_df = ticker_df.sort_values(\"trade_date\")\n",
+							"    \n",
+							"    # Calculate EMA 12 and EMA 26 using pandas\n",
+							"    ema_12 = ticker_df[\"close_price\"].ewm(alpha=k_12, adjust=False).mean()\n",
+							"    ema_26 = ticker_df[\"close_price\"].ewm(alpha=k_26, adjust=False).mean()\n",
+							"    \n",
+							"    # MACD line — use pandas .round() NOT pyspark round()\n",
+							"    ticker_df[\"macd_line\"]   = (ema_12 - ema_26).round(4)\n",
+							"    \n",
+							"    # Signal line\n",
+							"    ticker_df[\"macd_signal\"] = ticker_df[\"macd_line\"].ewm(alpha=k_9, adjust=False).mean().round(4)\n",
+							"    \n",
+							"    # Histogram\n",
+							"    ticker_df[\"macd_hist\"]   = (\n",
+							"        ticker_df[\"macd_line\"] - ticker_df[\"macd_signal\"]\n",
+							"    ).round(4)\n",
+							"    \n",
+							"    return ticker_df[[\n",
+							"        \"ticker\", \"trade_date\", \"close_price\",\n",
+							"        \"macd_line\", \"macd_signal\", \"macd_hist\"\n",
+							"    ]]\n",
+							"\n",
+							"# Extract close prices\n",
+							"df_prices = df_stocks.select(\n",
+							"    col(\"ticker\"),\n",
+							"    col(\"trade_date\"),\n",
+							"    col(\"close_price\").cast(\"double\")\n",
+							")\n",
+							"\n",
+							"# Apply to all tickers\n",
+							"df_macd_complete = df_prices\\\n",
+							"    .groupBy(\"ticker\")\\\n",
+							"    .applyInPandas(calculate_macd, schema=macd_schema)\n",
+							"\n",
+							"print(f\" MACD calculated!\")\n",
+							"print(f\" Total rows: {df_macd_complete.count()}\")\n",
+							"\n",
+							"print(\"\\nAAPL MACD — last 5 days:\")\n",
+							"df_macd_complete\\\n",
+							"    .filter(col(\"ticker\") == \"AAPL\")\\\n",
+							"    .orderBy(col(\"trade_date\").desc())\\\n",
+							"    .show(50)"
+						],
+						"outputs": [],
+						"execution_count": 25
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/stocksparkpool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 15
+				},
+				"autoScale": {
+					"enabled": false,
+					"maxNodeCount": 10,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.5",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "centralus"
+		}
+	]
+}
