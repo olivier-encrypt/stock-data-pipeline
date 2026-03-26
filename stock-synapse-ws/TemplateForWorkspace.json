@@ -159,7 +159,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "f32311d8-8706-48b9-960a-b5122e9130c6"
+						"spark.autotune.trackingId": "98f34465-17f8-42eb-b432-ccd7de655185"
 					}
 				},
 				"metadata": {
@@ -224,7 +224,7 @@
 							"print(f\"   JDBC URL: {jdbc_url}\")"
 						],
 						"outputs": [],
-						"execution_count": 17
+						"execution_count": 40
 					},
 					{
 						"cell_type": "code",
@@ -258,7 +258,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 18
+						"execution_count": 42
 					},
 					{
 						"cell_type": "code",
@@ -292,7 +292,7 @@
 							"df_metadata.show(5)"
 						],
 						"outputs": [],
-						"execution_count": 19
+						"execution_count": 43
 					},
 					{
 						"cell_type": "code",
@@ -324,7 +324,7 @@
 							"df_indicators.show(5)"
 						],
 						"outputs": [],
-						"execution_count": 20
+						"execution_count": 44
 					},
 					{
 						"cell_type": "code",
@@ -401,12 +401,145 @@
 							"\n",
 							"print(\"\\nAAPL MACD — last 5 days:\")\n",
 							"df_macd_complete\\\n",
-							"    .filter(col(\"ticker\") == \"AAPL\")\\\n",
+							"    .filter(col(\"ticker\") == \"MSFT\")\\\n",
 							"    .orderBy(col(\"trade_date\").desc())\\\n",
 							"    .show(50)"
 						],
 						"outputs": [],
-						"execution_count": 25
+						"execution_count": 51
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"#Calculate Bollinger Bands\n",
+							"\n",
+							"# BB Middle = SMA 20 (already in df_indicators)\n",
+							"# BB Upper  = SMA 20 + (2 × 20-day stddev)\n",
+							"# BB Lower  = SMA 20 - (2 × 20-day stddev)\n",
+							"#\n",
+							"# stddev = standard deviation of close price\n",
+							"# over last 20 days — measures volatility\n",
+							"\n",
+							"from pyspark.sql.functions import stddev, col, round\n",
+							"from pyspark.sql import Window\n",
+							"\n",
+							"\n",
+							"# Window — last 20 days per ticker\n",
+							"window_20=Window.partitionBy(\"ticker\").orderBy(\"trade_date\").rowsBetween(-19, 0)\n",
+							"\n",
+							"# Calculate 20-day rolling standard deviation\n",
+							"df_with_stddev = df_stocks.select(\n",
+							"    \"ticker\",\n",
+							"    \"trade_date\",\n",
+							"    \"close_price\"\n",
+							").withColumn(\n",
+							"    \"stddev_20\",\n",
+							"    stddev(col(\"close_price\")).over(window_20)\n",
+							")\n",
+							"\n",
+							"print(\"standard diviation calculated\")\n",
+							"\n",
+							"# Join with indicators to get SMA_20\n",
+							"df_bb = df_with_stddev.join(\n",
+							"    df_indicators.select(\"ticker\", \"trade_date\",\"sma_20\"),\n",
+							"    on=[\"ticker\",\"trade_date\"],\n",
+							"    how=\"left\"\n",
+							")\n",
+							"\n",
+							"df_bollinger = df_bb.withColumn(\n",
+							"    \"bb_middle\",\n",
+							"    round(col(\"sma_20\"),4)\n",
+							").withColumn(\n",
+							"    \"bb_upper\",\n",
+							"    round(col(\"sma_20\")+(2*col(\"stddev_20\")),4)\n",
+							").withColumn(\n",
+							"    \"bb_lower\",\n",
+							"    round(col(\"sma_20\")-(2*col(\"stddev_20\")),4)\n",
+							").select(\n",
+							"    \"ticker\",\n",
+							"    \"trade_date\",\n",
+							"    \"bb_upper\",\n",
+							"    \"bb_middle\",\n",
+							"    \"bb_lower\"\n",
+							")\n",
+							"\n",
+							"print(\"Bollinger Bands calculated!\")\n",
+							"\n",
+							"#preview\n",
+							"print(\"\\n Bollinger bands - AAPL last 5 days:\")\n",
+							"df_bollinger\\\n",
+							"    .filter(col(\"ticker\")==\"AAPL\")\\\n",
+							"    .orderBy(col(\"trade_date\").desc())\\\n",
+							"    .show(5)\n",
+							""
+						],
+						"outputs": [],
+						"execution_count": 59
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"df_ind_slim = df_indicators.select(\n",
+							"    \"ticker\",\n",
+							"    \"trade_date\",\n",
+							"    \"sma_20\",\n",
+							"    \"ema_20\",\n",
+							"    \"rsi_14\"\n",
+							")\n",
+							"\n",
+							"print(\"indicators column retrived!\\n\")\n",
+							"\n",
+							"df2_stock_slim = df_stocks.select(\n",
+							"    \"ticker\",\n",
+							"    \"trade_date\",\n",
+							"    \"open_price\",\n",
+							"    \"high_price\",\n",
+							"    \"low_price\",\n",
+							"    \"volume\"\n",
+							")\n",
+							"\n",
+							"print(\"row_stocks column retrived!\")\n",
+							"\n",
+							"df_final=df_macd_complete\\\n",
+							".join(df_ind_slim, on=[\"ticker\",\"trade_date\"], how=\"left\")\\\n",
+							".join(df2_stock_slim, on=[\"ticker\",\"trade_date\"], how=\"left\")\\\n",
+							".join(df_bollinger, on=[\"ticker\", \"trade_date\"], how=\"left\")\n",
+							"\n",
+							"print(\"all dataframes joined!\")\n",
+							"print(f\"total rows:{df_final.count()} \")\n",
+							"print(f\"total columns:{len(df_final.columns)}\")\n",
+							"\n",
+							"#preview\n",
+							"print(\" first 5 rows of the final dataframe\")\n",
+							"df_final.show(5)\n",
+							"\n",
+							"print(\"\\nAll columns in df_final:\")\n",
+							"print(df_final.columns)"
+						],
+						"outputs": [],
+						"execution_count": 60
+					},
+					{
+						"cell_type": "code",
+						"metadata": {},
+						"source": [
+							"df_metadata_slim = df_metadata.select(\n",
+							"    \"ticker\",\n",
+							"    \"company_name\",\n",
+							"    \"sector\",\n",
+							"    \"industry\",\n",
+							"    \"exchange\"\n",
+							")\n",
+							"\n",
+							"df_final= df_final.join(df_metadata_slim, on=[\"ticker\"], how=\"left\")\n",
+							"\n",
+							"print(f\"total columns: {len(df_final.columns)}\")\n",
+							"df_final.show(5)"
+						],
+						"outputs": [],
+						"execution_count": 61
 					}
 				]
 			},
