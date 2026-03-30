@@ -138,6 +138,26 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "-- Cell 8: Create External Tables\n-- Gold Layer — Synapse Serverless\n\n-- this script creates:\n-- external data source: pointing to datalake\n-- external file format:tells synapse files are parquet\n-- external tables: dim_ticker, dim_dates, fact_stock_prices\n\nUSE stock_gold;\n\n-- master key for synapse to encrypt credentials when connecting to the data lake\n\n-- IF NOT EXISTS(\n--     SELECT * FROM sys.symmetric_keys\n--     WHERE name= '##MS_DatabaseMasterkey##'\n-- )\n-- CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'stockPipeline@2026'\n\n-- Tells Synapse HOW to authenticate\n-- to your Data Lake storage\n-- We use Managed Identity — Synapse automatically\n-- uses its own identity to access the Data Lake\n-- No passwords needed!\n\n-- IF NOT EXISTS (\n--     SELECT * FROM sys.database_scoped_credentials\n--     WHERE name = 'synapse_managed_identity'\n-- )\n-- CREATE DATABASE SCOPED CREDENTIAL synapse_managed_identity\n-- WITH IDENTITY = 'Managed Identity'\n\n-- create external datasource\nif not exists(\n    select * from sys.external_data_sources\n    where name = 'gold_data_source'\n)\ncreate external data source gold_data_source\nwith (\n    Location = 'abfss://stockdata@stockdatalake237.dfs.core.windows.net/gold/'\n);\n\n--create external file format\nif not exists(\n    select * from sys.external_file_formats\n    where name ='parquet_format'\n)\ncreate external file format parquet_format\nwith(\n    format_type= PARQUET,\n    data_compression = 'org.apache.hadoop.io.compress.SnappyCodec'\n);\n\n-- external tables\n\n--dim_tickers\nif not exists(\n    select * from sys.external_tables\n    where name = 'dim_ticker'\n)\ncreate external table dim_tickers (\n    ticker_key int,\n    ticker  varchar(10),\n    company_name varchar(100),\n    exchange    varchar(20),\n    currency    varchar(10),\n    country     varchar(50),\n    sector      varchar(50),\n    industry    varchar(100)\n)\nwith(\n    data_source =gold_data_source,\n    file_format=parquet_format,\n    location='dim_tickers'\n);\n\n\n--dim_dates\nif not exits  (\n    select * from sys.external_tables\n    where name = 'dim_dates'\n)\ncreate external table dim_dates(\n    trade_date  date,\n    date_key    int,\n    year        int,\n    month       int,\n    month_name  varchar(10),\n    quarter     varchar(5),\n    day_of_week varchar(10),\n    week_number int,\n    is_weekend  bit,\n    is_holiday  bit \n)\nwith(\n    data_source =gold_data_source,\n    file_format=parquet_format,\n    location='dim_dates/'\n)\n\n--fact_stock_prices\nif not exist(\n    select * from sys.external_tables\n    where name=\"fact_stock_prices\"\n)\ncreate external table fact_stock_prices(\n    stock_key    int,\n    date_key     int,\n    ticker_key   int,\n    ticker       varchar(10),\n    trade_date   float,\n    open_price   float,\n    high_price   float,\n    low_price    float,\n    close_price  bigint,\n    volume       float,\n    sma_20       float,\n    ema_20       float,\n    rsi_14       float,\n    macd_line    float,\n    macd_signal  float,\n    macd_hist    float,\n    bb_upper     float,\n    bb_middle    float,\n    bb_lower     float,\n    ingested_at  datetime,    -- ← when Bronze got the data\n    loaded_at    datetime  \n)\nwith(\n    data_source =gold_data_source,\n    file_format=parquet_format,\n    location='fact_stock_prices/'\n)\n\n-- Check external tables exist\nSELECT \n    name        AS table_name,\n    create_date AS created_at\nFROM sys.external_tables\nORDER BY create_date;\n\n-- Quick count check\nSELECT 'dim_tickers'       AS table_name, COUNT(*) AS rows FROM dim_tickers\nUNION ALL\nSELECT 'dim_dates'         AS table_name, COUNT(*) AS rows FROM dim_dates\nUNION ALL\nSELECT 'fact_stock_prices' AS table_name, COUNT(*) AS rows FROM fact_stock_prices;\n\n\n\n\n",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "master",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/stock_transformations')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -159,7 +179,7 @@
 						"spark.dynamicAllocation.enabled": "false",
 						"spark.dynamicAllocation.minExecutors": "2",
 						"spark.dynamicAllocation.maxExecutors": "2",
-						"spark.autotune.trackingId": "415c7ad9-fb8a-4d2d-b526-ec7f990e2c2e"
+						"spark.autotune.trackingId": "60191638-edb1-40e6-8aad-1a34653c6a5b"
 					}
 				},
 				"metadata": {
@@ -194,10 +214,8 @@
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
-							"# ============================================\n",
-							"#  Test Connection to Azure SQL\n",
-							"# ============================================\n",
 							"\n",
+							"#  Test Connection to Azure SQL\n",
 							"\n",
 							"# Azure SQL connection details\n",
 							"\n",
@@ -224,16 +242,16 @@
 							"print(f\"   JDBC URL: {jdbc_url}\")"
 						],
 						"outputs": [],
-						"execution_count": 4
+						"execution_count": 17
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
-							"# ============================================\n",
+							"\n",
 							"# Read raw_stocks from Azure SQL\n",
 							"# into a PySpark DataFrame\n",
-							"# ============================================\n",
+							"\n",
 							"\n",
 							"print(\"Reading raw_stock from Azure SQL....\")\n",
 							"\n",
@@ -241,6 +259,16 @@
 							"    url = jdbc_url,\n",
 							"    table = \"raw_stocks\",\n",
 							"    properties = connection_properties\n",
+							")\n",
+							"df_stocks= df_stocks.select(\n",
+							"    \"ticker\",\n",
+							"    \"trade_date\",\n",
+							"    \"open_price\",\n",
+							"    \"high_price\",\n",
+							"    \"low_price\",\n",
+							"    \"close_price\",\n",
+							"    \"volume\",\n",
+							"    \"ingested_at\"   \n",
 							")\n",
 							"\n",
 							"# .cache() tells Spark to keep this DataFrame in memory\n",
@@ -258,7 +286,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 6
+						"execution_count": 18
 					},
 					{
 						"cell_type": "code",
@@ -292,14 +320,14 @@
 							"df_metadata.show(5)"
 						],
 						"outputs": [],
-						"execution_count": 7
+						"execution_count": null
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
 							"\n",
-							"# Read technical_indicators from Azure SQL\n",
+							"# Read technical_indicators from Azure SQl\n",
 							"\n",
 							"\n",
 							"print(\"Reading technical_indicators from Azure SQL...\")\n",
@@ -324,13 +352,13 @@
 							"df_indicators.show(5)"
 						],
 						"outputs": [],
-						"execution_count": 8
+						"execution_count": null
 					},
 					{
 						"cell_type": "code",
 						"metadata": {},
 						"source": [
-							"# ============================================\n",
+							"\n",
 							"#  Calculate True MACD\n",
 							"\n",
 							"# EMA Formula:\n",
@@ -339,7 +367,6 @@
 							"# alpha = smoothing factor k\n",
 							"# adjust=False = recursive formula (not weighted sum)\n",
 							"\n",
-							"# ============================================\n",
 							"\n",
 							"from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType\n",
 							"from pyspark.sql.functions import col\n",
@@ -406,7 +433,7 @@
 							"    .show(50)"
 						],
 						"outputs": [],
-						"execution_count": 9
+						"execution_count": 6
 					},
 					{
 						"cell_type": "code",
@@ -475,7 +502,7 @@
 							""
 						],
 						"outputs": [],
-						"execution_count": 11
+						"execution_count": 8
 					},
 					{
 						"cell_type": "code",
@@ -497,7 +524,8 @@
 							"    \"open_price\",\n",
 							"    \"high_price\",\n",
 							"    \"low_price\",\n",
-							"    \"volume\"\n",
+							"    \"volume\",\n",
+							"    \"ingested_at\"\n",
 							")\n",
 							"\n",
 							"print(\"row_stocks column retrived!\")\n",
@@ -519,7 +547,7 @@
 							"print(df_final.columns)"
 						],
 						"outputs": [],
-						"execution_count": 12
+						"execution_count": 15
 					},
 					{
 						"cell_type": "code",
@@ -539,7 +567,7 @@
 							"df_final.show(5)"
 						],
 						"outputs": [],
-						"execution_count": 13
+						"execution_count": 10
 					},
 					{
 						"cell_type": "code",
@@ -557,7 +585,8 @@
 							"\n",
 							"from pyspark.sql.functions import (\n",
 							"    col, year, month, dayofweek, weekofyear, date_format,\n",
-							"    when, lit, monotonically_increasing_id, quarter,dayofmonth\n",
+							"    when, lit, monotonically_increasing_id, quarter,dayofmonth,\n",
+							"    current_timestamp\n",
 							")\n",
 							"from pyspark.sql.types import IntegerType\n",
 							"\n",
@@ -714,7 +743,11 @@
 							"    \"macd_hist\",\n",
 							"    \"bb_upper\",\n",
 							"    \"bb_middle\",\n",
-							"    \"bb_lower\"\n",
+							"    \"bb_lower\",\n",
+							"    \"ingested_at\"\n",
+							").withColumn(\n",
+							"    \"loaded_at\",\n",
+							"    current_timestamp()\n",
 							")\n",
 							"\n",
 							"df_fact_final.write.mode(\"overwrite\").parquet(gold_path + \"fact_stock_prices/\")\n",
@@ -733,7 +766,7 @@
 							"print(\"\\n  Gold layer successfully written to Data Lake!\")"
 						],
 						"outputs": [],
-						"execution_count": 14
+						"execution_count": 20
 					}
 				]
 			},
