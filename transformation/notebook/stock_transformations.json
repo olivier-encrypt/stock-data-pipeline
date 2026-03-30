@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "4b94a5be-e8d6-4258-83ba-056989e7b61c"
+				"spark.autotune.trackingId": "15ccbdce-243f-4a36-99c8-d37933f70985"
 			}
 		},
 		"metadata": {
@@ -79,7 +79,7 @@
 					"print(f\"   Database: {database}\")\n",
 					"print(f\"   JDBC URL: {jdbc_url}\")"
 				],
-				"execution_count": 4
+				"execution_count": 17
 			},
 			{
 				"cell_type": "code",
@@ -96,6 +96,16 @@
 					"    table = \"raw_stocks\",\n",
 					"    properties = connection_properties\n",
 					")\n",
+					"df_stocks= df_stocks.select(\n",
+					"    \"ticker\",\n",
+					"    \"trade_date\",\n",
+					"    \"open_price\",\n",
+					"    \"high_price\",\n",
+					"    \"low_price\",\n",
+					"    \"close_price\",\n",
+					"    \"volume\",\n",
+					"    \"ingested_at\"   \n",
+					")\n",
 					"\n",
 					"# .cache() tells Spark to keep this DataFrame in memory\n",
 					"# so we don't re-read from Azure SQL every time we use it\n",
@@ -111,7 +121,7 @@
 					"df_stocks.printSchema()\n",
 					""
 				],
-				"execution_count": 6
+				"execution_count": 18
 			},
 			{
 				"cell_type": "code",
@@ -143,7 +153,7 @@
 					"print(\"\\nAll rows (only 5 tickers):\")\n",
 					"df_metadata.show(5)"
 				],
-				"execution_count": 7
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -173,7 +183,7 @@
 					"print(\"\\nFirst 5 rows:\")\n",
 					"df_indicators.show(5)"
 				],
-				"execution_count": 8
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -252,7 +262,7 @@
 					"    .orderBy(col(\"trade_date\").desc())\\\n",
 					"    .show(50)"
 				],
-				"execution_count": 9
+				"execution_count": 6
 			},
 			{
 				"cell_type": "code",
@@ -319,7 +329,7 @@
 					"    .show(5)\n",
 					""
 				],
-				"execution_count": 11
+				"execution_count": 8
 			},
 			{
 				"cell_type": "code",
@@ -340,7 +350,8 @@
 					"    \"open_price\",\n",
 					"    \"high_price\",\n",
 					"    \"low_price\",\n",
-					"    \"volume\"\n",
+					"    \"volume\",\n",
+					"    \"ingested_at\"\n",
 					")\n",
 					"\n",
 					"print(\"row_stocks column retrived!\")\n",
@@ -361,7 +372,7 @@
 					"print(\"\\nAll columns in df_final:\")\n",
 					"print(df_final.columns)"
 				],
-				"execution_count": 12
+				"execution_count": 15
 			},
 			{
 				"cell_type": "code",
@@ -379,7 +390,7 @@
 					"print(f\"total columns: {len(df_final.columns)}\")\n",
 					"df_final.show(5)"
 				],
-				"execution_count": 13
+				"execution_count": 10
 			},
 			{
 				"cell_type": "code",
@@ -396,7 +407,8 @@
 					"\n",
 					"from pyspark.sql.functions import (\n",
 					"    col, year, month, dayofweek, weekofyear, date_format,\n",
-					"    when, lit, monotonically_increasing_id, quarter,dayofmonth\n",
+					"    when, lit, monotonically_increasing_id, quarter,dayofmonth,\n",
+					"    current_timestamp\n",
 					")\n",
 					"from pyspark.sql.types import IntegerType\n",
 					"\n",
@@ -553,7 +565,11 @@
 					"    \"macd_hist\",\n",
 					"    \"bb_upper\",\n",
 					"    \"bb_middle\",\n",
-					"    \"bb_lower\"\n",
+					"    \"bb_lower\",\n",
+					"    \"ingested_at\"\n",
+					").withColumn(\n",
+					"    \"loaded_at\",\n",
+					"    current_timestamp()\n",
 					")\n",
 					"\n",
 					"df_fact_final.write.mode(\"overwrite\").parquet(gold_path + \"fact_stock_prices/\")\n",
@@ -571,7 +587,7 @@
 					"print(f\"\\n Location: {gold_path}\")\n",
 					"print(\"\\n  Gold layer successfully written to Data Lake!\")"
 				],
-				"execution_count": 14
+				"execution_count": 20
 			}
 		]
 	}
