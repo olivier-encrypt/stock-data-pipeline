@@ -18,7 +18,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "ead6f34a-64e5-4e71-b0ab-7d887d2a7586"
+				"spark.autotune.trackingId": "4b94a5be-e8d6-4258-83ba-056989e7b61c"
 			}
 		},
 		"metadata": {
@@ -52,10 +52,8 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"# ============================================\n",
-					"#  Test Connection to Azure SQL\n",
-					"# ============================================\n",
 					"\n",
+					"#  Test Connection to Azure SQL\n",
 					"\n",
 					"# Azure SQL connection details\n",
 					"\n",
@@ -86,10 +84,10 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"# ============================================\n",
+					"\n",
 					"# Read raw_stocks from Azure SQL\n",
 					"# into a PySpark DataFrame\n",
-					"# ============================================\n",
+					"\n",
 					"\n",
 					"print(\"Reading raw_stock from Azure SQL....\")\n",
 					"\n",
@@ -151,7 +149,7 @@
 				"cell_type": "code",
 				"source": [
 					"\n",
-					"# Read technical_indicators from Azure SQL\n",
+					"# Read technical_indicators from Azure SQl\n",
 					"\n",
 					"\n",
 					"print(\"Reading technical_indicators from Azure SQL...\")\n",
@@ -180,7 +178,7 @@
 			{
 				"cell_type": "code",
 				"source": [
-					"# ============================================\n",
+					"\n",
 					"#  Calculate True MACD\n",
 					"\n",
 					"# EMA Formula:\n",
@@ -189,7 +187,6 @@
 					"# alpha = smoothing factor k\n",
 					"# adjust=False = recursive formula (not weighted sum)\n",
 					"\n",
-					"# ============================================\n",
 					"\n",
 					"from pyspark.sql.types import StructType, StructField, StringType, DateType, DoubleType\n",
 					"from pyspark.sql.functions import col\n",
