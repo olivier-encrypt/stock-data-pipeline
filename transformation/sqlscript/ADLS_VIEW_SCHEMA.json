@@ -1,5 +1,5 @@
 {
-	"name": "SQL script 1",
+	"name": "ADLS_VIEW_SCHEMA",
 	"properties": {
 		"content": {
 			"query": "-- Cell 8: Create External Tables\n-- Gold Layer — Synapse Serverless\n\n-- this script creates:\n-- Create VIEWS using OPENROWSET\n-- It is the recommended pattern for synapse Serverless + Parquet files\n\nUSE stock_gold;\n\nGO\n-- fact_stock_prices view\nIF EXISTS (\n    SELECT * FROM sys.views\n    WHERE name = 'fact_stock_prices'\n)\nDROP VIEW fact_stock_prices;\nGO\nCREATE VIEW fact_stock_prices AS\nSELECT *\nFROM OPENROWSET(\n    BULK 'abfss://stockdata@stockdatalake237.dfs.core.windows.net/gold/fact_stock_prices/',\n    FORMAT = 'PARQUET'\n) AS result;\n\nGO\n\n-- dim_dates view\nIF EXISTS (\n    SELECT * FROM sys.views\n    WHERE name = 'dim_dates'\n)\nDROP VIEW dim_dates;\nGO\nCREATE VIEW dim_dates AS\nSELECT *\nFROM OPENROWSET(\n    BULK 'abfss://stockdata@stockdatalake237.dfs.core.windows.net/gold/dim_dates/',\n    FORMAT = 'PARQUET'\n) AS result;\nGO\n\n-- dim_tickers view\nIF EXISTS (\n    SELECT * FROM sys.views\n    WHERE name = 'dim_tickers'\n)\nDROP VIEW dim_tickers;\nGO\nCREATE VIEW dim_tickers AS\nSELECT *\nFROM OPENROWSET(\n    BULK 'abfss://stockdata@stockdatalake237.dfs.core.windows.net/gold/dim_tickers/',\n    FORMAT = 'PARQUET'\n) AS result;\n\n\n\n\n\n",
