@@ -1,0 +1,9 @@
+{
+	"name": "stock-pipeline-adf237",
+	"location": "centralus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "3ef5741f-035b-4bad-a4fc-1f441821b98c",
+		"tenantId": "8d281d1d-9c4d-4bf7-b16e-032d15de9f6c"
+	}
+}
