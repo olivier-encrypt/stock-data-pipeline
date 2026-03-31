@@ -1,0 +1,16 @@
+{
+	"name": "Azurestorage_stocks",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"connectionString": "DefaultEndpointsProtocol=https;AccountName=stockdatalake237;EndpointSuffix=core.windows.net;",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiJkZmQ4M2IyOS1hN2EyLTRiMjEtYTM3Yi1iMjY1NWQyMTRhM2QiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "stock-pipeline-ir",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
