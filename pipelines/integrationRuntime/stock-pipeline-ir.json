@@ -1,0 +1,7 @@
+{
+	"name": "stock-pipeline-ir",
+	"properties": {
+		"type": "SelfHosted",
+		"description": "self-hosted IR for stock pipeline"
+	}
+}
