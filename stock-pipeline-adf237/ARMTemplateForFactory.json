@@ -87,19 +87,12 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c python fetchmeta_data.py",
+							"command": "python fetchmeta_data.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-scripts",
-							"extendedProperties": {
-								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
-								"AZURE_SQL_DATABASE": "stocks-db",
-								"AZURE_SQL_USERNAME": "sqladmin",
-								"AZURE_SQL_PASSWORD": "Azuresql@237",
-								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
-							},
+							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -130,19 +123,12 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c python fetch_stocks.py",
+							"command": "python fetch_stocks.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-scripts",
-							"extendedProperties": {
-								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
-								"AZURE_SQL_DATABASE": "stocks-db",
-								"AZURE_SQL_USERNAME": "sqladmin",
-								"AZURE_SQL_PASSWORD": "Azuresql@237",
-								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
-							},
+							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -173,19 +159,12 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c python fetch_indicators",
+							"command": "python fetch_indicators",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-scripts",
-							"extendedProperties": {
-								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
-								"AZURE_SQL_DATABASE": "stocks-db",
-								"AZURE_SQL_USERNAME": "sqladmin",
-								"AZURE_SQL_PASSWORD": "Azuresql@237",
-								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
-							},
+							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
