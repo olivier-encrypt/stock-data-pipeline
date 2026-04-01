@@ -206,12 +206,19 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetchmeta_data.py\"",
+							"command": "cmd /c python fetchmeta_data.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-logs",
+							"folderPath": "adf-scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": "Azuresql@237",
+								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -242,12 +249,19 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_stocks.py\"",
+							"command": "cmd /c python fetch_stocks.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-logs",
+							"folderPath": "adf-scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": "Azuresql@237",
+								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -278,12 +292,19 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_indicators.py\"",
+							"command": "cmd /c python fetch_indicators",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "adf-logs",
+							"folderPath": "adf-scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": "Azuresql@237",
+								"ALPHA_VANTAGE_API_KEY": "H221K4JPGANWUUOU"
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
