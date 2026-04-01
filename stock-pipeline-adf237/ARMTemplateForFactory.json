@@ -1,0 +1,395 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "stock-pipeline-adf237"
+		},
+		"AzureBatch_stocks_accessKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessKey' of 'AzureBatch_stocks'"
+		},
+		"AzureSqlDB_stocks_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDB_stocks'"
+		},
+		"AzureSynapse_stock_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSynapse_stock'"
+		},
+		"Azurestorage_stocks_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Azurestorage_stocks'"
+		},
+		"AzureBatch_stocks_properties_typeProperties_batchUri": {
+			"type": "string",
+			"defaultValue": "https://stockpipelinebatch.centralus.batch.azure.com"
+		},
+		"AzureBatch_stocks_properties_typeProperties_poolName": {
+			"type": "string",
+			"defaultValue": "stock-pipeline-pool"
+		},
+		"AzureBatch_stocks_properties_typeProperties_accountName": {
+			"type": "string",
+			"defaultValue": "stockpipelinebatch"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stocks-sql-server.database.windows.net"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stocks-db"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"AzureSynapseArtifacts1_properties_typeProperties_endpoint": {
+			"type": "string",
+			"defaultValue": "https://stock-synapse-ws.dev.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stock-synapse-ws-ondemand.sql.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stock_gold"
+		},
+		"AzureSynapse_stock_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "synapseadmin"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/stock_market_pipeline')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "fetch_metadata",
+						"type": "Custom",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetchmeta_data.py\"",
+							"resourceLinkedService": {
+								"referenceName": "Azurestorage_stocks",
+								"type": "LinkedServiceReference"
+							},
+							"folderPath": "adf_logs",
+							"referenceObjects": {
+								"linkedServices": [],
+								"datasets": []
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureBatch_stocks",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "fetch_stocks",
+						"type": "Custom",
+						"dependsOn": [
+							{
+								"activity": "fetch_metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_stocks.py\"",
+							"resourceLinkedService": {
+								"referenceName": "Azurestorage_stocks",
+								"type": "LinkedServiceReference"
+							},
+							"folderPath": "adf_logs",
+							"referenceObjects": {
+								"linkedServices": [],
+								"datasets": []
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureBatch_stocks",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "fetch_indicators",
+						"type": "Custom",
+						"dependsOn": [
+							{
+								"activity": "fetch_stocks",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_indicators.py\"",
+							"resourceLinkedService": {
+								"referenceName": "Azurestorage_stocks",
+								"type": "LinkedServiceReference"
+							},
+							"folderPath": "adf_logs",
+							"referenceObjects": {
+								"linkedServices": [],
+								"datasets": []
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureBatch_stocks",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "run_transformations",
+						"type": "SynapseNotebook",
+						"dependsOn": [
+							{
+								"activity": "fetch_indicators",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": {
+									"value": "stock_transformations",
+									"type": "Expression"
+								},
+								"type": "NotebookReference"
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": {
+									"value": "stocksparkpool",
+									"type": "Expression"
+								},
+								"type": "BigDataPoolReference"
+							},
+							"conf": {
+								"spark.dynamicAllocation.enabled": null,
+								"spark.dynamicAllocation.minExecutors": null,
+								"spark.dynamicAllocation.maxExecutors": null
+							},
+							"numExecutors": null
+						},
+						"linkedServiceName": {
+							"referenceName": "AzureSynapseArtifacts1",
+							"type": "LinkedServiceReference"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/Azurestorage_stocks')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureBatch_stocks')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureSynapseArtifacts1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBatch_stocks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBatch",
+				"typeProperties": {
+					"batchUri": "[parameters('AzureBatch_stocks_properties_typeProperties_batchUri')]",
+					"poolName": "[parameters('AzureBatch_stocks_properties_typeProperties_poolName')]",
+					"accountName": "[parameters('AzureBatch_stocks_properties_typeProperties_accountName')]",
+					"linkedServiceName": {
+						"referenceName": "Azurestorage_stocks",
+						"type": "LinkedServiceReference"
+					},
+					"accessKey": {
+						"type": "SecureString",
+						"value": "[parameters('AzureBatch_stocks_accessKey')]"
+					}
+				},
+				"connectVia": {
+					"referenceName": "stock-pipeline-ir",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/stock-pipeline-ir')]",
+				"[concat(variables('factoryId'), '/linkedServices/Azurestorage_stocks')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDB_stocks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDB_stocks_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDB_stocks_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDB_stocks_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSqlDB_stocks_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSynapseArtifacts1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSynapseArtifacts",
+				"typeProperties": {
+					"endpoint": "[parameters('AzureSynapseArtifacts1_properties_typeProperties_endpoint')]",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/a8b3a337-96a4-4002-857b-c17626d02086/resourceGroups/stock-pipeline-rg/providers/Microsoft.Synapse/workspaces/stock-synapse-ws"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureSynapse_stock')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"server": "[parameters('AzureSynapse_stock_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSynapse_stock_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": true,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSynapse_stock_properties_typeProperties_userName')]",
+					"password": {
+						"type": "SecureString",
+						"value": "[parameters('AzureSynapse_stock_password')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/Azurestorage_stocks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"connectionString": "[parameters('Azurestorage_stocks_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "stock-pipeline-ir",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/integrationRuntimes/stock-pipeline-ir')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/daily_stock_trigger')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "stock_market_pipeline",
+							"type": "PipelineReference"
+						},
+						"parameters": {}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2026-04-01T01:04:00",
+						"timeZone": "Central Standard Time",
+						"schedule": {
+							"minutes": [
+								0
+							],
+							"hours": [
+								22
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/stock_market_pipeline')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/stock-pipeline-ir')]",
+			"type": "Microsoft.DataFactory/factories/integrationRuntimes",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "SelfHosted",
+				"description": "self-hosted IR for stock pipeline",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		}
+	]
+}

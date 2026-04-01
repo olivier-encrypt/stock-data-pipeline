@@ -1,0 +1,140 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "stock-pipeline-adf237"
+		},
+		"AzureBatch_stocks_accessKey": {
+			"type": "secureString",
+			"metadata": "Secure string for 'accessKey' of 'AzureBatch_stocks'"
+		},
+		"AzureSqlDB_stocks_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSqlDB_stocks'"
+		},
+		"AzureSynapse_stock_password": {
+			"type": "secureString",
+			"metadata": "Secure string for 'password' of 'AzureSynapse_stock'"
+		},
+		"Azurestorage_stocks_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'Azurestorage_stocks'"
+		},
+		"AzureBatch_stocks_properties_typeProperties_batchUri": {
+			"type": "string",
+			"defaultValue": "https://stockpipelinebatch.centralus.batch.azure.com"
+		},
+		"AzureBatch_stocks_properties_typeProperties_poolName": {
+			"type": "string",
+			"defaultValue": "stock-pipeline-pool"
+		},
+		"AzureBatch_stocks_properties_typeProperties_accountName": {
+			"type": "string",
+			"defaultValue": "stockpipelinebatch"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stocks-sql-server.database.windows.net"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stocks-db"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
+		},
+		"AzureSynapseArtifacts1_properties_typeProperties_endpoint": {
+			"type": "string",
+			"defaultValue": "https://stock-synapse-ws.dev.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stock-synapse-ws-ondemand.sql.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stock_gold"
+		},
+		"AzureSynapse_stock_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "synapseadmin"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "stock-pipeline-adf237_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"AzureSqlDB_stocks_password": {
+						"value": "[parameters('AzureSqlDB_stocks_password')]"
+					},
+					"AzureSynapse_stock_password": {
+						"value": "[parameters('AzureSynapse_stock_password')]"
+					},
+					"Azurestorage_stocks_connectionString": {
+						"value": "[parameters('Azurestorage_stocks_connectionString')]"
+					},
+					"AzureBatch_stocks_accessKey": {
+						"value": "[parameters('AzureBatch_stocks_accessKey')]"
+					},
+					"AzureSqlDB_stocks_properties_typeProperties_server": {
+						"value": "[parameters('AzureSqlDB_stocks_properties_typeProperties_server')]"
+					},
+					"AzureSqlDB_stocks_properties_typeProperties_database": {
+						"value": "[parameters('AzureSqlDB_stocks_properties_typeProperties_database')]"
+					},
+					"AzureSqlDB_stocks_properties_typeProperties_userName": {
+						"value": "[parameters('AzureSqlDB_stocks_properties_typeProperties_userName')]"
+					},
+					"AzureSynapseArtifacts1_properties_typeProperties_endpoint": {
+						"value": "[parameters('AzureSynapseArtifacts1_properties_typeProperties_endpoint')]"
+					},
+					"AzureSynapse_stock_properties_typeProperties_server": {
+						"value": "[parameters('AzureSynapse_stock_properties_typeProperties_server')]"
+					},
+					"AzureSynapse_stock_properties_typeProperties_database": {
+						"value": "[parameters('AzureSynapse_stock_properties_typeProperties_database')]"
+					},
+					"AzureSynapse_stock_properties_typeProperties_userName": {
+						"value": "[parameters('AzureSynapse_stock_properties_typeProperties_userName')]"
+					},
+					"AzureBatch_stocks_properties_typeProperties_batchUri": {
+						"value": "[parameters('AzureBatch_stocks_properties_typeProperties_batchUri')]"
+					},
+					"AzureBatch_stocks_properties_typeProperties_poolName": {
+						"value": "[parameters('AzureBatch_stocks_properties_typeProperties_poolName')]"
+					},
+					"AzureBatch_stocks_properties_typeProperties_accountName": {
+						"value": "[parameters('AzureBatch_stocks_properties_typeProperties_accountName')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

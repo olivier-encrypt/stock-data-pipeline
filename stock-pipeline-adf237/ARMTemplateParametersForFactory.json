@@ -1,0 +1,51 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "stock-pipeline-adf237"
+		},
+		"AzureBatch_stocks_accessKey": {
+			"value": ""
+		},
+		"AzureSqlDB_stocks_password": {
+			"value": ""
+		},
+		"AzureSynapse_stock_password": {
+			"value": ""
+		},
+		"Azurestorage_stocks_connectionString": {
+			"value": ""
+		},
+		"AzureBatch_stocks_properties_typeProperties_batchUri": {
+			"value": "https://stockpipelinebatch.centralus.batch.azure.com"
+		},
+		"AzureBatch_stocks_properties_typeProperties_poolName": {
+			"value": "stock-pipeline-pool"
+		},
+		"AzureBatch_stocks_properties_typeProperties_accountName": {
+			"value": "stockpipelinebatch"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_server": {
+			"value": "stocks-sql-server.database.windows.net"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_database": {
+			"value": "stocks-db"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_userName": {
+			"value": "sqladmin"
+		},
+		"AzureSynapseArtifacts1_properties_typeProperties_endpoint": {
+			"value": "https://stock-synapse-ws.dev.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_server": {
+			"value": "stock-synapse-ws-ondemand.sql.azuresynapse.net"
+		},
+		"AzureSynapse_stock_properties_typeProperties_database": {
+			"value": "stock_gold"
+		},
+		"AzureSynapse_stock_properties_typeProperties_userName": {
+			"value": "synapseadmin"
+		}
+	}
+}
