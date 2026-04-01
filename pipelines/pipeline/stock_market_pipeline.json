@@ -20,7 +20,7 @@
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "adf-logs",
+					"folderPath": "stockdata/adf-logs",
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
@@ -56,7 +56,7 @@
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "adf-logs",
+					"folderPath": "stockdata/adf-logs",
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
@@ -92,7 +92,7 @@
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "adf-logs",
+					"folderPath": "stockdata/adf-logs",
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
