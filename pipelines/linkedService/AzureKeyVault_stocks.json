@@ -1,0 +1,10 @@
+{
+	"name": "AzureKeyVault_stocks",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://stock-pipeline-kv.vault.azure.net/"
+		}
+	}
+}
