@@ -1,0 +1,150 @@
+{
+	"name": "stock_market_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "fetch_metadata",
+				"type": "Custom",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetchmeta_data.py\"",
+					"resourceLinkedService": {
+						"referenceName": "Azurestorage_stocks",
+						"type": "LinkedServiceReference"
+					},
+					"folderPath": "adf_logs",
+					"referenceObjects": {
+						"linkedServices": [],
+						"datasets": []
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureBatch_stocks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "fetch_stocks",
+				"type": "Custom",
+				"dependsOn": [
+					{
+						"activity": "fetch_metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_stocks.py\"",
+					"resourceLinkedService": {
+						"referenceName": "Azurestorage_stocks",
+						"type": "LinkedServiceReference"
+					},
+					"folderPath": "adf_logs",
+					"referenceObjects": {
+						"linkedServices": [],
+						"datasets": []
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureBatch_stocks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "fetch_indicators",
+				"type": "Custom",
+				"dependsOn": [
+					{
+						"activity": "fetch_stocks",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"command": "cmd /c \"cd /d \"C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\" && venv\\Scripts\\activate && python ingestion/fetch_indicators.py\"",
+					"resourceLinkedService": {
+						"referenceName": "Azurestorage_stocks",
+						"type": "LinkedServiceReference"
+					},
+					"folderPath": "adf_logs",
+					"referenceObjects": {
+						"linkedServices": [],
+						"datasets": []
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureBatch_stocks",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "run_transformations",
+				"type": "SynapseNotebook",
+				"dependsOn": [
+					{
+						"activity": "fetch_indicators",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebook": {
+						"referenceName": {
+							"value": "stock_transformations",
+							"type": "Expression"
+						},
+						"type": "NotebookReference"
+					},
+					"snapshot": true,
+					"sparkPool": {
+						"referenceName": {
+							"value": "stocksparkpool",
+							"type": "Expression"
+						},
+						"type": "BigDataPoolReference"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "AzureSynapseArtifacts1",
+					"type": "LinkedServiceReference"
+				}
+			}
+		],
+		"annotations": []
+	}
+}
