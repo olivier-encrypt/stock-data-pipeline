@@ -92,7 +92,7 @@
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "stockdata/adf-logs",
+							"folderPath": "adf-logs",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -128,7 +128,7 @@
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "stockdata/adf-logs",
+							"folderPath": "adf-logs",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -164,7 +164,7 @@
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "stockdata/adf-logs",
+							"folderPath": "adf-logs",
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -211,7 +211,7 @@
 								"type": "BigDataPoolReference"
 							},
 							"conf": {
-								"spark.dynamicAllocation.enabled": null,
+								"spark.dynamicAllocation.enabled": true,
 								"spark.dynamicAllocation.minExecutors": null,
 								"spark.dynamicAllocation.maxExecutors": null
 							},
