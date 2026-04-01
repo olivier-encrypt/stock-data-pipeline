@@ -1,0 +1,12 @@
+{
+	"name": "AzureSynapseArtifacts1",
+	"properties": {
+		"annotations": [],
+		"type": "AzureSynapseArtifacts",
+		"typeProperties": {
+			"endpoint": "https://stock-synapse-ws.dev.azuresynapse.net",
+			"authentication": "MSI",
+			"workspaceResourceId": "/subscriptions/a8b3a337-96a4-4002-857b-c17626d02086/resourceGroups/stock-pipeline-rg/providers/Microsoft.Synapse/workspaces/stock-synapse-ws"
+		}
+	}
+}
