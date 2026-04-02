@@ -15,12 +15,19 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"command": "python fetchmeta_data.py",
+					"command": "cmd /c python fetchmeta_data.py",
 					"resourceLinkedService": {
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+					"folderPath": "stockdata/scripts",
+					"extendedProperties": {
+						"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+						"AZURE_SQL_DATABASE": "stocks-db",
+						"AZURE_SQL_USERNAME": "sqladmin",
+						"AZURE_SQL_PASSWORD": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+						"ALPHA_VANTAGE_API_KEY": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)"
+					},
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
@@ -51,12 +58,19 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"command": "python fetch_stocks.py",
+					"command": "cmd /c python fetch_stocks.py",
 					"resourceLinkedService": {
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+					"folderPath": "stockdata/scripts",
+					"extendedProperties": {
+						"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+						"AZURE_SQL_DATABASE": "stocks-db",
+						"AZURE_SQL_USERNAME": "sqladmin",
+						"AZURE_SQL_PASSWORD": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+						"ALPHA_VANTAGE_API_KEY": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)"
+					},
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
@@ -87,12 +101,19 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"command": "python fetch_indicators",
+					"command": "cmd /c python fetch_indicators",
 					"resourceLinkedService": {
 						"referenceName": "Azurestorage_stocks",
 						"type": "LinkedServiceReference"
 					},
-					"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+					"folderPath": "stockdata/scripts",
+					"extendedProperties": {
+						"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+						"AZURE_SQL_DATABASE": "stocks-db",
+						"AZURE_SQL_USERNAME": "sqladmin",
+						"AZURE_SQL_PASSWORD": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+						"ALPHA_VANTAGE_API_KEY": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)"
+					},
 					"referenceObjects": {
 						"linkedServices": [],
 						"datasets": []
