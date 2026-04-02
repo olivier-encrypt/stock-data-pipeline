@@ -7,33 +7,18 @@
 			"metadata": "Data Factory name",
 			"defaultValue": "stock-pipeline-adf237"
 		},
-		"AzureSqlDB_stocks_password": {
-			"type": "secureString",
-			"metadata": "Secure string for 'password' of 'AzureSqlDB_stocks'"
-		},
 		"AzureSynapse_stock_password": {
 			"type": "secureString",
 			"metadata": "Secure string for 'password' of 'AzureSynapse_stock'"
 		},
 		"Azurestorage_stocks_connectionString": {
 			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'Azurestorage_stocks'"
+			"metadata": "Secure string for 'connectionString' of 'Azurestorage_stocks'",
+			"defaultValue": "DefaultEndpointsProtocol=https;AccountName=stockdatalake237;EndpointSuffix=core.windows.net;"
 		},
-		"AzureBatch_stocks_accessKey": {
-			"type": "secureString",
-			"metadata": "Secure string for 'accessKey' of 'AzureBatch_stocks'"
-		},
-		"AzureSqlDB_stocks_properties_typeProperties_server": {
+		"AzureKeyVault_stocks_properties_typeProperties_baseUrl": {
 			"type": "string",
-			"defaultValue": "stocks-sql-server.database.windows.net"
-		},
-		"AzureSqlDB_stocks_properties_typeProperties_database": {
-			"type": "string",
-			"defaultValue": "stocks-db"
-		},
-		"AzureSqlDB_stocks_properties_typeProperties_userName": {
-			"type": "string",
-			"defaultValue": "sqladmin"
+			"defaultValue": "https://stock-pipeline-kv.vault.azure.net/"
 		},
 		"AzureSynapseArtifacts1_properties_typeProperties_endpoint": {
 			"type": "string",
@@ -50,6 +35,18 @@
 		"AzureSynapse_stock_properties_typeProperties_userName": {
 			"type": "string",
 			"defaultValue": "synapseadmin"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_server": {
+			"type": "string",
+			"defaultValue": "stocks-sql-server.database.windows.net"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "stocks-db"
+		},
+		"AzureSqlDB_stocks_properties_typeProperties_userName": {
+			"type": "string",
+			"defaultValue": "sqladmin"
 		},
 		"AzureBatch_stocks_properties_typeProperties_batchUri": {
 			"type": "string",
@@ -69,23 +66,14 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/AzureSqlDB_stocks')]",
+			"name": "[concat(parameters('factoryName'), '/AzureKeyVault_stocks')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
-				"type": "AzureSqlDatabase",
+				"type": "AzureKeyVault",
 				"typeProperties": {
-					"server": "[parameters('AzureSqlDB_stocks_properties_typeProperties_server')]",
-					"database": "[parameters('AzureSqlDB_stocks_properties_typeProperties_database')]",
-					"encrypt": "mandatory",
-					"trustServerCertificate": false,
-					"authenticationType": "SQL",
-					"userName": "[parameters('AzureSqlDB_stocks_properties_typeProperties_userName')]",
-					"password": {
-						"type": "SecureString",
-						"value": "[parameters('AzureSqlDB_stocks_password')]"
-					}
+					"baseUrl": "[parameters('AzureKeyVault_stocks_properties_typeProperties_baseUrl')]"
 				}
 			},
 			"dependsOn": []
@@ -139,6 +127,34 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/AzureSqlDB_stocks')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureSqlDatabase",
+				"typeProperties": {
+					"server": "[parameters('AzureSqlDB_stocks_properties_typeProperties_server')]",
+					"database": "[parameters('AzureSqlDB_stocks_properties_typeProperties_database')]",
+					"encrypt": "mandatory",
+					"trustServerCertificate": false,
+					"authenticationType": "SQL",
+					"userName": "[parameters('AzureSqlDB_stocks_properties_typeProperties_userName')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault_stocks",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "AZURE-SQL-PASSWORD"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault_stocks')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/Azurestorage_stocks')]",
 			"type": "Microsoft.DataFactory/factories/linkedServices",
 			"apiVersion": "2018-06-01",
@@ -146,15 +162,19 @@
 				"annotations": [],
 				"type": "AzureBlobStorage",
 				"typeProperties": {
-					"connectionString": "[parameters('Azurestorage_stocks_connectionString')]"
-				},
-				"connectVia": {
-					"referenceName": "stock-pipeline-ir",
-					"type": "IntegrationRuntimeReference"
+					"connectionString": "[parameters('Azurestorage_stocks_connectionString')]",
+					"accountKey": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault_stocks",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "AZURE-STORAGE-KEY1"
+					}
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/integrationRuntimes/stock-pipeline-ir')]"
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault_stocks')]"
 			]
 		},
 		{
@@ -173,18 +193,18 @@
 						"type": "LinkedServiceReference"
 					},
 					"accessKey": {
-						"type": "SecureString",
-						"value": "[parameters('AzureBatch_stocks_accessKey')]"
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "AzureKeyVault_stocks",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "AZURE-BATCH-KEY"
 					}
-				},
-				"connectVia": {
-					"referenceName": "stock-pipeline-ir",
-					"type": "IntegrationRuntimeReference"
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/integrationRuntimes/stock-pipeline-ir')]",
-				"[concat(variables('factoryId'), '/linkedServices/Azurestorage_stocks')]"
+				"[concat(variables('factoryId'), '/linkedServices/Azurestorage_stocks')]",
+				"[concat(variables('factoryId'), '/linkedServices/AzureKeyVault_stocks')]"
 			]
 		},
 		{
@@ -206,12 +226,25 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "python fetchmeta_data.py",
+							"command": "cmd /c python fetchmeta_data.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+							"folderPath": "stockdata/scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+									"type": "Expression"
+								},
+								"ALPHA_VANTAGE_API_KEY": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)",
+									"type": "Expression"
+								}
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -242,12 +275,25 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "python fetch_stocks.py",
+							"command": "cmd /c python fetch_stocks.py",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+							"folderPath": "stockdata/scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+									"type": "Expression"
+								},
+								"ALPHA_VANTAGE_API_KEY": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)",
+									"type": "Expression"
+								}
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []
@@ -278,12 +324,25 @@
 						},
 						"userProperties": [],
 						"typeProperties": {
-							"command": "python fetch_indicators",
+							"command": "cmd /c python fetch_indicators",
 							"resourceLinkedService": {
 								"referenceName": "Azurestorage_stocks",
 								"type": "LinkedServiceReference"
 							},
-							"folderPath": "C:\\Users\\User\\OneDrive\\Documents\\database  system\\stock-market-pipeline\\ingestion",
+							"folderPath": "stockdata/scripts",
+							"extendedProperties": {
+								"AZURE_SQL_SERVER": "stocks-sql-server.database.windows.net",
+								"AZURE_SQL_DATABASE": "stocks-db",
+								"AZURE_SQL_USERNAME": "sqladmin",
+								"AZURE_SQL_PASSWORD": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/AZURE-SQL-PASSWORD/)",
+									"type": "Expression"
+								},
+								"ALPHA_VANTAGE_API_KEY": {
+									"value": "@Microsoft.KeyVault(SecretUri=https://stock-pipeline-kv.vault.azure.net/secrets/ALPHA-VANTAGE-API-KEY/)",
+									"type": "Expression"
+								}
+							},
 							"referenceObjects": {
 								"linkedServices": [],
 								"datasets": []

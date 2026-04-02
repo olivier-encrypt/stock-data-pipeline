@@ -5,17 +5,11 @@
 		"factoryName": {
 			"value": "stock-pipeline-adf237"
 		},
-		"AzureBatch_stocks_accessKey": {
-			"value": ""
-		},
-		"AzureSqlDB_stocks_password": {
-			"value": ""
-		},
 		"AzureSynapse_stock_password": {
 			"value": ""
 		},
 		"Azurestorage_stocks_connectionString": {
-			"value": ""
+			"value": "DefaultEndpointsProtocol=https;AccountName=stockdatalake237;EndpointSuffix=core.windows.net;"
 		},
 		"AzureBatch_stocks_properties_typeProperties_batchUri": {
 			"value": "https://stockpipelinebatch.centralus.batch.azure.com"
@@ -25,6 +19,9 @@
 		},
 		"AzureBatch_stocks_properties_typeProperties_accountName": {
 			"value": "stockpipelinebatch"
+		},
+		"AzureKeyVault_stocks_properties_typeProperties_baseUrl": {
+			"value": "https://stock-pipeline-kv.vault.azure.net/"
 		},
 		"AzureSqlDB_stocks_properties_typeProperties_server": {
 			"value": "stocks-sql-server.database.windows.net"
